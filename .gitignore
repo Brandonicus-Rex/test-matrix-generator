@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+reports/
+# Generated outputs (the examples in samples/output are committed)
+/*.xlsx
+/*.csv
+/*.md.out
+~$*.xls*
