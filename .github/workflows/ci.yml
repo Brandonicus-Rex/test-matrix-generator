@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements.txt
+      - run: pytest --junitxml=reports/junit.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report-${{ matrix.python-version }}
+          path: reports/
+
+  # Generate pairwise and 3-wise workbooks and run them through the real
+  # excel-regression-runner against its mock API.
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Brandonicus-Rex/excel-regression-runner
+          path: runner-repo
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt -r runner-repo/requirements.txt
+      - name: Generate test workbooks
+        run: |
+          python -m matrixgen samples/telecom_catalog.yaml -o pairwise.xlsx
+          python -m matrixgen samples/telecom_catalog.yaml --strength 3 -o threewise.xlsx
+      - name: Run them with excel-regression-runner
+        working-directory: runner-repo
+        env:
+          API_USERNAME: demo
+          API_PASSWORD: demo-password
+        run: |
+          python -m uvicorn mock_server.app:app --port 8000 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/health && break; sleep 1; done
+          python -m runner.cli ../pairwise.xlsx --base-url http://127.0.0.1:8000 --output ../pairwise_results.xlsx
+          python -m runner.cli ../threewise.xlsx --base-url http://127.0.0.1:8000 --output ../threewise_results.xlsx
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-results
+          path: "*_results.xlsx"
