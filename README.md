@@ -15,6 +15,10 @@ so test design flows straight into automated execution.
   rules)              3-wise)            back / clean up rows)
 ```
 
+## Demo
+
+![Terminal demo: generating a 10-test pairwise matrix from the sample catalog](demo.gif)
+
 ## Why pairwise?
 
 Most defects are triggered by a single setting or by an interaction between two.
