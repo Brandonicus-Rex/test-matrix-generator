@@ -1,0 +1,32 @@
+# A fictional mobile product catalog. Plan names and features match the mock
+# API in excel-regression-runner, so generated workbooks run against it as-is.
+name: Fictional mobile catalog
+
+parameters:
+  plan:      [basic, plus, unlimited]
+  device:    [phone, tablet, iot]
+  voicemail: [on, off]
+  mms:       [on, off]
+  intl:      [on, off]
+  hotspot:   [on, off]
+
+# Combinations the product doesn't allow. Generated tests never break these,
+# and pairs they rule out are reported as impossible, not as coverage gaps.
+constraints:
+  - device == 'iot' -> voicemail == 'off'
+  - device == 'iot' -> mms == 'off'
+  - device == 'tablet' -> voicemail == 'off'
+  - plan == 'basic' -> hotspot == 'off'
+  - intl == 'on' -> plan in ['plus', 'unlimited']
+
+# How each parameter becomes an excel-regression-runner row.
+mapping:
+  plan:      {to: param}         # sent as plan=<value>, checked in the response
+  voicemail: {to: feature}       # on: in the features list; off: must be absent
+  mms:       {to: feature}
+  intl:      {to: feature}
+  hotspot:   {to: feature}
+  device:    {to: description}   # not sent to the API; shown in Description
+
+runner:
+  area_code: "201"               # numbers are 201-555-01xx (fictional range)
